@@ -1,5 +1,5 @@
 import React from 'react';
-import heroImg from '../assets/hero.png';
+import GoldenRetrive from '../assets/GoldenRetrive.png';
 
 function HeroSection() {
   return (
@@ -8,22 +8,22 @@ function HeroSection() {
       {/* คอลัมน์ที่ 1 (ซ้าย): ข้อความโปรย */}
       <div className="hero-text-left" style={{ textAlign: 'right', paddingRight: '20px' }}>
         <h1 style={{ fontSize: '42px', fontWeight: 'bold', lineHeight: '1.2', margin: '0 0 20px 0', color: '#1a1a1a' }}>
-          Stay<br />Informed,<br />Stay Inspired
+         Pure Love<br />Has Four Paws,<br />Stay Loyal
         </h1>
         <p style={{ color: '#666', fontSize: '14px', lineHeight: '1.5', margin: 0 }}>
-          Discover a World of Knowledge at Your Fingertips. Your Daily Dose of Inspiration and Information.
+         Welcome to a webpage dedicated entirely to news, updates, and pure cuteness!
         </p>
       </div>
 
       {/* คอลัมน์ที่ 2 (กลาง): รูปภาพ */}
       <div className="hero-image-center" style={{ display: 'flex', justifyContent: 'center' }}>
         <img 
-          src={heroImg} 
-          alt="Hero" 
+          src={GoldenRetrive} 
+          alt="GoldenDog" 
           style={{
             width: '100%',
             maxWidth: '320px',
-            borderRadius: '16px',
+            borderRadius: '35px',
             objectFit: 'cover'
           }}
         />
@@ -38,10 +38,10 @@ function HeroSection() {
           Wichapon Meeyen.
         </h2>
         <p style={{ color: '#555', fontSize: '14px', lineHeight: '1.6', marginBottom: '20px' }}>
-          I am a pet enthusiast and freelance writer who specializes in animal behavior and care. With a deep love for cats, I enjoy sharing insights on feline companionship and wellness.
+        I am a Full-Stack Development student at TechUp with a deep passion and love for dogs. Building this website brings me so much joy, as my goal is to share both helpful information and the pure cuteness of dogs with everyone who visits this page.
         </p>
         <p style={{ color: '#555', fontSize: '14px', lineHeight: '1.6', margin: 0 }}>
-          When I'm not writing, I spend time volunteering at my local animal shelter, helping cats find loving homes.
+        In my free time or whenever pets come up in conversation, I always talk about dogs and spend time researching these adorable creatures.
         </p>
       </div>
 
