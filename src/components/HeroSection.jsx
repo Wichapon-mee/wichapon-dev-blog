@@ -1,7 +1,7 @@
 import React from 'react';
 import GoldenRetrive from '../assets/GoldenRetrive.png';
 
-function HeroSection() {
+export const  HeroSection = () =>  {
   return (
     <div className="hero-container">
       
@@ -49,4 +49,4 @@ function HeroSection() {
   );
 }
 
-export default HeroSection;
+
