@@ -40,4 +40,136 @@ body {
     order: 3; /* ข้อมูลผู้เขียนอยู่ล่างสุด */
   }
 }
- 
+
+/* --- สไตล์สำหรับ ArticleSection แบบ Responsive --- */
+.article-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 40px 20px;
+  font-family: sans-serif;
+}
+
+.article-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #1a1a1a;
+  margin: 0 0 16px;
+}
+
+.article-toolbar {
+  background-color: #f2f1ef;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.article-search {
+  position: relative;
+  width: 100%;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+}
+
+.article-search input {
+  width: 100%;
+  padding: 10px 40px 10px 16px;
+  font-size: 14px;
+  color: #333;
+  border: none;
+  outline: none;
+  background: transparent;
+  border-radius: 8px;
+}
+
+.article-search input::placeholder {
+  color: #666;
+}
+
+.article-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #999;
+  pointer-events: none;
+}
+
+.article-category-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.article-category-label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.article-select-trigger {
+  height: auto;
+  padding: 10px 16px;
+  font-size: 14px;
+}
+
+.article-category-desktop {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.article-category-btn {
+  color: #666;
+  font-weight: 500;
+  padding: 6px 16px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.article-category-btn.active {
+  background-color: #dcdaba;
+  color: #1a1a1a;
+}
+
+@media (min-width: 769px) {
+  .article-toolbar {
+    background-color: #f3f3f3;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 10px 16px;
+  }
+
+  .article-search {
+    width: 260px;
+    order: 2;
+    border-color: #eaeaea;
+  }
+
+  .article-category-mobile {
+    display: none;
+  }
+
+  .article-category-desktop {
+    display: flex;
+    order: 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .article-section {
+    padding: 40px 20px 20px;
+  }
+}
+
