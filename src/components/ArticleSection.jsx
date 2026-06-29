@@ -10,7 +10,7 @@ import {
 import { blogPosts } from '@/data/blogPosts';
 import BlogCard from './ฺBlogCard';
 
-const categories = ['Highlight', 'Dog', 'Inspiration', 'General'];
+const categories = ["Highlight", "Dog", "Inspiration", "General"];
 
 function ArticleSection() {
   const [selectedCategory, setSelectedCategory] = useState('Highlight');
