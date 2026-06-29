@@ -7,11 +7,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { blogPosts } from '@/data/blogPosts';
+import BlogCard from './ฺBlogCard';
 
 const categories = ['Highlight', 'Dog', 'Inspiration', 'General'];
 
 function ArticleSection() {
   const [selectedCategory, setSelectedCategory] = useState('Highlight');
+
+  const filteredPosts =
+    selectedCategory === 'Highlight'
+      ? blogPosts
+      : blogPosts.filter((post) => post.category === selectedCategory);
 
   return (
     <section className="article-section">
@@ -70,6 +77,24 @@ function ArticleSection() {
           ))}
         </div>
       </div>
+
+      <div className="article-grid">
+        {filteredPosts.map((post) => (
+          <BlogCard
+            key={post.id}
+            image={post.image}
+            category={post.category}
+            title={post.title}
+            description={post.description}
+            author={post.author}
+            date={post.date}
+          />
+        ))}
+      </div>
+
+      <button type="button" className="article-view-more">
+        View more
+      </button>
     </section>
   );
 }
