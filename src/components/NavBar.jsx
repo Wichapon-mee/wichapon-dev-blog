@@ -1,4 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Menu } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+
+const authActions = [
+  { label: 'Log in', className: 'nav-dropdown-login' },
+  { label: 'Sign up', className: 'nav-dropdown-signup' },
+];
 
 const LinkedinIcon = ({ size = 12 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -15,14 +25,17 @@ const GithubIcon = ({ size = 12 }) => (
 
 // แก้ไข Todo 1: เปลี่ยนจาก default export เป็น Named Export โดยการเติมคำว่า export const ด้านหน้า
 export const NavBar = () => {
+  const [menuOpen, setMenuOpen] = useState(false);
+
   return (
+    <header className={`nav-header-group${menuOpen ? ' nav-header-group--open' : ''}`}>
     <nav style={{
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
       padding: '20px 40px',
-      background: '#f8f9fa',
-      borderBottom: '1px solid #eaeaea'
+      background: '#fff',
+      borderBottom: menuOpen ? 'none' : '1px solid #eaeaea'
     }}>
       {/* ฝั่งซ้าย: โลโก้ */}
       <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>
@@ -37,9 +50,16 @@ export const NavBar = () => {
           <button className="btn-signup" style={{ padding: '10px 24px', borderRadius: '20px', border: 'none', background: '#1a1a1a', color: '#fff', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease' }}>Sign up</button>
         </div>
 
-        {/* ปุ่มแฮมเบอร์เกอร์ ☰ */}
-        <div className="nav-hamburger" style={{ fontSize: '24px', cursor: 'pointer', display: 'none', color: '#333' }}>
-          ☰
+        {/* ปุ่มแฮมเบอร์เกอร์ + Dropdown Menu (Mobile) */}
+        <div className="nav-hamburger">
+          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+            <DropdownMenuTrigger
+              className="nav-hamburger-trigger"
+              aria-label="Open menu"
+            >
+              <Menu size={24} strokeWidth={2} />
+            </DropdownMenuTrigger>
+          </DropdownMenu>
         </div>
       </div>
 
@@ -50,12 +70,84 @@ export const NavBar = () => {
         .btn-signup:hover {
           background-color: #cccccc !important;
         }
+        .nav-hamburger {
+          display: none;
+        }
+        .nav-hamburger-trigger {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          color: #333;
+          padding: 0;
+          outline: none;
+        }
+        .nav-mobile-panel {
+          display: none;
+          flex-direction: column;
+          gap: 16px;
+          padding: 24px 20px;
+          background: #f8f9fa;
+          border-bottom: 1px solid #eaeaea;
+        }
+        .nav-dropdown-login,
+        .nav-dropdown-signup {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          margin: 0;
+          padding: 12px 24px;
+          border-radius: 9999px;
+          font-size: 16px;
+          font-weight: 500;
+          cursor: pointer;
+        }
+        .nav-dropdown-login {
+          border: 1px solid #333;
+          background: #fff;
+          color: #333;
+        }
+        .nav-dropdown-login:hover,
+        .nav-dropdown-login:focus {
+          background: #f5f5f5;
+          color: #333;
+        }
+        .nav-dropdown-signup {
+          border: none;
+          background: #1a1a1a;
+          color: #fff;
+        }
+        .nav-dropdown-signup:hover,
+        .nav-dropdown-signup:focus {
+          background: #333;
+          color: #fff;
+        }
         @media (max-width: 768px) {
           .nav-buttons { display: none !important; }
-          .nav-hamburger { display: block !important; }
+          .nav-hamburger { display: block; }
+          .nav-mobile-panel { display: flex; }
         }
       `}</style>
     </nav>
+
+    {menuOpen && (
+      <div className="nav-mobile-panel">
+        {authActions.map((action) => (
+          <button
+            key={action.label}
+            type="button"
+            className={action.className}
+            onClick={() => setMenuOpen(false)}
+          >
+            {action.label}
+          </button>
+        ))}
+      </div>
+    )}
+    </header>
   );
 }
 
