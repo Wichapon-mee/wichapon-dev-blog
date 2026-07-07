@@ -4,6 +4,7 @@ import ReactMarkdown from 'react-markdown';
 import { Copy, Smile } from 'lucide-react';
 import { NavBar, Footer } from '@/components/NavBar';
 import LoginRequiredDialog from '@/components/LoginRequiredDialog';
+import CopyToast from '@/components/CopyToast';
 import { fetchPostById } from '@/api/blogApi';
 
 // Assignment: สมมติว่าผู้ใช้ทุกคนยังไม่ได้เข้าสู่ระบบ
@@ -43,6 +44,7 @@ function ViewPostPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
+  const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [comment, setComment] = useState('');
 
   useEffect(() => {
@@ -87,15 +89,35 @@ function ViewPostPage() {
   };
 
   const handleCopyLink = async () => {
+    const pageUrl = window.location.href;
+
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(pageUrl);
+      setShowCopiedToast(true);
     } catch {
-      // clipboard ไม่พร้อมใช้งาน — ไม่ต้อง login
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = pageUrl;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        setShowCopiedToast(true);
+      } catch {
+        // clipboard ไม่พร้อมใช้งาน
+      }
     }
   };
 
-  const shareUrl = encodeURIComponent(window.location.href);
-  const shareTitle = encodeURIComponent(post?.title ?? '');
+  const pageUrl = window.location.href;
+  const encodedShareUrl = encodeURIComponent(pageUrl);
+
+  const facebookShareUrl = `https://www.facebook.com/share.php?u=${encodedShareUrl}`;
+  const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`;
+  const twitterShareUrl = `https://www.twitter.com/share?&url=${encodedShareUrl}`;
 
   return (
     <div className="view-post-layout">
@@ -151,7 +173,7 @@ function ViewPostPage() {
                   </button>
 
                   <a
-                    href={`https://www.facebook.com/sharer/sharer.php?u=${shareUrl}`}
+                    href={facebookShareUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="view-post-social-btn"
@@ -161,7 +183,7 @@ function ViewPostPage() {
                   </a>
 
                   <a
-                    href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrl}`}
+                    href={linkedinShareUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="view-post-social-btn"
@@ -171,7 +193,7 @@ function ViewPostPage() {
                   </a>
 
                   <a
-                    href={`https://twitter.com/intent/tweet?url=${shareUrl}&text=${shareTitle}`}
+                    href={twitterShareUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="view-post-social-btn"
@@ -228,6 +250,11 @@ function ViewPostPage() {
       <LoginRequiredDialog
         open={showLoginDialog}
         onClose={() => setShowLoginDialog(false)}
+      />
+
+      <CopyToast
+        open={showCopiedToast}
+        onClose={() => setShowCopiedToast(false)}
       />
     </div>
   );
