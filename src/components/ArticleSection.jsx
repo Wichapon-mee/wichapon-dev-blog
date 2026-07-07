@@ -98,6 +98,8 @@ function ArticleSection() {
    */
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
+    setLoading(true);
+    setError(null);
     loadPostsByCategory(category, 1, false);
   };
 
@@ -178,17 +180,20 @@ function ArticleSection() {
 
       {error && <p className="article-status article-status-error">{error}</p>}
 
-      {loading && !error ? (
-        <div className="article-loading" role="status" aria-live="polite">
-          <div className="article-loading-spinner" aria-hidden="true" />
-          <p>Loading...</p>
-        </div>
-      ) : (
-        <div className="article-grid">
+      <div className="article-content">
+        {loading && !error && (
+          <div className="article-loading-overlay" role="status" aria-live="polite">
+            <div className="article-loading-spinner" aria-hidden="true" />
+            <p>Loading...</p>
+          </div>
+        )}
+
+        <div className={`article-grid${loading && posts.length > 0 ? ' article-grid--loading' : ''}`}>
           {!error &&
             posts.map((post) => (
               <BlogCard
                 key={post.id}
+                id={post.id}
                 image={post.image}
                 category={post.category}
                 title={post.title}
@@ -198,9 +203,8 @@ function ArticleSection() {
               />
             ))}
         </div>
-      )}
+      </div>
 
-      {/* แสดงปุ่ม View more เมื่อ API ยังมีหน้าถัดไป (hasMore = true) */}
       {hasMore && !error && !loading && (
         <button
           type="button"

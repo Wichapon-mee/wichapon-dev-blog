@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import {
   DropdownMenu,
@@ -151,11 +152,6 @@ export const NavBar = () => {
   );
 }
 
-// แก้ไข Todo 2: เพิ่ม Component Footer ไว้ในไฟล์เดียวกัน และส่งออกด้วย Named Export
-// 1. ตรวจสอบบรรทัดบนสุดของไฟล์ NavBar.jsx ให้มีตัวดึงไอคอนเหล่านี้นะครับ:
-// import { Linkedin, Github, Globe } from "lucide-react";
-
-// 2. โค้ดส่วน Footer ใหม่แกะกล่องตามรูปแบบภาพดีไซน์
 export const Footer = () => {
   return (
     <footer style={{
@@ -200,14 +196,14 @@ export const Footer = () => {
 
         {/* ฝั่งขวา: ลิงก์ Home page ขีดเส้นใต้ */}
         <div>
-          <a href="/" style={{ 
+          <Link to="/" style={{ 
             fontSize: '14px', 
             color: '#1a1a1a', 
             textDecoration: 'underline', 
             fontWeight: '500' 
           }}>
             Home page
-          </a>
+          </Link>
         </div>
 
       </div>

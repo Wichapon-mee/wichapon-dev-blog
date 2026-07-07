@@ -27,3 +27,12 @@ export async function fetchPosts({ page = 1, limit = 6, category, keyword } = {}
   const { data } = await axios.get(`${API_BASE_URL}/posts`, { params });
   return data;
 }
+
+/**
+ * เรียก API เพื่อดึงบทความรายการเดียวตาม id
+ * ใช้กับหน้า /post/:postId
+ */
+export async function fetchPostById(postId) {
+  const { data } = await axios.get(`${API_BASE_URL}/posts/${postId}`);
+  return data;
+}
