@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import {
   Select,
@@ -14,6 +15,8 @@ import BlogCard from './ฺBlogCard';
 const categories = ['Highlight', 'Cat', 'Inspiration', 'General'];
 // จำนวนบทความที่ดึงจาก API ต่อ 1 ครั้ง (ใช้กับ query parameter limit)
 const POSTS_PER_PAGE = 6;
+// จำนวนผลลัพธ์สูงสุดใน dropdown ค้นหา
+const SEARCH_RESULTS_LIMIT = 10;
 
 /**
  * สร้าง object params สำหรับส่งไป API
@@ -56,6 +59,12 @@ function ArticleSection() {
   const [loading, setLoading] = useState(true); // กำลังโหลด — แสดง spinner กลางจอ
   const [loadingMore, setLoadingMore] = useState(false); // กำลังโหลดเพิ่มจากปุ่ม View more
   const [error, setError] = useState(null); // ข้อความ error เมื่อเรียก API ไม่สำเร็จ
+  const [searchKeyword, setSearchKeyword] = useState(''); // คำค้นหาจากช่อง Search
+  const [searchResults, setSearchResults] = useState([]); // รายการบทความจากผลค้นหา
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false); // แสดง dropdown ผลค้นหา
+  const [searchLoading, setSearchLoading] = useState(false); // กำลังค้นหาจาก API
+
+  const searchRef = useRef(null);
 
   /**
    * ดึงบทความจาก API ตามหมวดและหน้าที่กำหนด
@@ -112,9 +121,71 @@ function ArticleSection() {
     loadPostsByCategory(selectedCategory, nextPage, true);
   };
 
+  /**
+   * ทำงานเมื่อผู้ใช้พิมพ์ในช่องค้นหา
+   * อัปเดต searchKeyword แล้วให้ useEffect เรียก API ค้นหา
+   */
+  const handleSearchChange = (event) => {
+    setSearchKeyword(event.target.value);
+  };
+
+  /**
+   * ปิด dropdown และล้างคำค้นหาหลังเลือกบทความ
+   */
+  const handleSearchResultClick = () => {
+    setSearchKeyword('');
+    setSearchResults([]);
+    setShowSearchDropdown(false);
+  };
+
   // useEffect: รันครั้งเดียวตอนเปิดหน้าเว็บ → โหลดบทความ Highlight หน้าแรก
   useEffect(() => {
     loadPostsByCategory('Highlight', 1, false);
+  }, []);
+
+  // useEffect: ค้นหาบทความจาก API ด้วย keyword (title, description, content)
+  useEffect(() => {
+    const trimmedKeyword = searchKeyword.trim();
+
+    if (!trimmedKeyword) {
+      setSearchResults([]);
+      setShowSearchDropdown(false);
+      return undefined;
+    }
+
+    const timer = setTimeout(async () => {
+      setSearchLoading(true);
+
+      try {
+        const data = await fetchPosts({
+          keyword: trimmedKeyword,
+          page: 1,
+          limit: SEARCH_RESULTS_LIMIT,
+        });
+
+        setSearchResults(data.posts);
+        setShowSearchDropdown(true);
+      } catch {
+        setSearchResults([]);
+        setShowSearchDropdown(true);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
+
+  // useEffect: ปิด dropdown เมื่อคลิกนอกพื้นที่ค้นหา
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setShowSearchDropdown(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   return (
@@ -122,15 +193,49 @@ function ArticleSection() {
       <h2 className="article-title">Latest articles</h2>
 
       <div className="article-toolbar">
-        {/* ช่องค้นหา (ยังไม่เปิดใช้งาน) */}
-        <div className="article-search">
+        {/* ช่องค้นหา — ค้นจาก title, description, content ผ่าน API keyword */}
+        <div className="article-search" ref={searchRef}>
           <input
             type="text"
             placeholder="Search"
-            disabled
+            value={searchKeyword}
+            onChange={handleSearchChange}
+            onFocus={() => {
+              if (searchKeyword.trim() && searchResults.length > 0) {
+                setShowSearchDropdown(true);
+              }
+            }}
             aria-label="Search articles"
+            aria-expanded={showSearchDropdown}
+            aria-controls="article-search-results"
+            autoComplete="off"
           />
           <Search size={16} className="article-search-icon" aria-hidden="true" />
+
+          {showSearchDropdown && searchKeyword.trim() && (
+            <ul id="article-search-results" className="article-search-dropdown" role="listbox">
+              {searchLoading && (
+                <li className="article-search-item article-search-item-status">Searching...</li>
+              )}
+
+              {!searchLoading && searchResults.length === 0 && (
+                <li className="article-search-item article-search-item-status">No articles found</li>
+              )}
+
+              {!searchLoading &&
+                searchResults.map((post) => (
+                  <li key={post.id} role="option">
+                    <Link
+                      to={`/post/${post.id}`}
+                      className="article-search-item"
+                      onClick={handleSearchResultClick}
+                    >
+                      {post.title}
+                    </Link>
+                  </li>
+                ))}
+            </ul>
+          )}
         </div>
 
         {/* Dropdown เลือกหมวด — แสดงบน Mobile */}
