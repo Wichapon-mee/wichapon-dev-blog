@@ -50,26 +50,44 @@ function formatDate(isoDate) {
   });
 }
 
+/** ปุ่ม View more — โหลดบทความหน้าถัดไป */
+function ViewMoreButton({ hasMore, error, loading, loadingMore, onViewMore }) {
+  if (!hasMore || error || loading) return null;
+
+  return (
+    <button
+      type="button"
+      className="article-view-more"
+      onClick={onViewMore}
+      disabled={loadingMore}
+    >
+      {loadingMore ? 'Loading...' : 'View more'}
+    </button>
+  );
+}
+
 function ArticleSection() {
-  // --- useState: เก็บข้อมูลที่เปลี่ยนได้ และทำให้ UI อัปเดตเมื่อค่าเปลี่ยน ---
-  const [selectedCategory, setSelectedCategory] = useState('Highlight'); // หมวดที่ผู้ใช้เลือกอยู่
-  const [posts, setPosts] = useState([]); // รายการบทความที่แสดงบนหน้า
-  const [currentPage, setCurrentPage] = useState(1); // หน้าปัจจุบันจาก API
-  const [hasMore, setHasMore] = useState(false); // ยังมีหน้าถัดไปให้โหลดหรือไม่
-  const [loading, setLoading] = useState(true); // กำลังโหลด — แสดง spinner กลางจอ
-  const [loadingMore, setLoadingMore] = useState(false); // กำลังโหลดเพิ่มจากปุ่ม View more
-  const [error, setError] = useState(null); // ข้อความ error เมื่อเรียก API ไม่สำเร็จ
-  const [searchKeyword, setSearchKeyword] = useState(''); // คำค้นหาจากช่อง Search
-  const [searchResults, setSearchResults] = useState([]); // รายการบทความจากผลค้นหา
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false); // แสดง dropdown ผลค้นหา
-  const [searchLoading, setSearchLoading] = useState(false); // กำลังค้นหาจาก API
+  // --- รายการบทความ + หมวดหมู่ ---
+  const [selectedCategory, setSelectedCategory] = useState('Highlight');
+  const [posts, setPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // --- View More (Pagination) ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  // --- Search ---
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
 
   const searchRef = useRef(null);
 
   /**
    * ดึงบทความจาก API ตามหมวดและหน้าที่กำหนด
-   * @param {string} category - หมวดที่ต้องการ
-   * @param {number} page - หน้าที่ต้องการ (เริ่มที่ 1)
    * @param {boolean} append - true = ต่อท้ายบทความเดิม (View more), false = แทนที่ทั้งหมด
    */
   const loadPostsByCategory = async (category, page = 1, append = false) => {
@@ -84,10 +102,8 @@ function ArticleSection() {
       const params = getRequestParams(category, page);
       const data = await fetchPosts(params);
 
-      // append = true → เอาบทความใหม่ต่อท้ายของเดิม (ใช้ตอนกด View more)
       setPosts((prev) => (append ? [...prev, ...data.posts] : data.posts));
       setCurrentPage(data.currentPage);
-      // API ส่ง nextPage มาเมื่อยังมีหน้าถัดไป → ใช้ควบคุมการแสดงปุ่ม View more
       setHasMore(Boolean(data.nextPage));
     } catch {
       if (!append) {
@@ -101,10 +117,13 @@ function ArticleSection() {
     }
   };
 
-  /**
-   * ทำงานเมื่อผู้ใช้เปลี่ยนหมวด (จาก Select บน Mobile หรือปุ่มบน Desktop)
-   * อัปเดต state หมวด แล้วโหลดบทความหน้า 1 ของหมวดนั้นใหม่
-   */
+  /** กด View more → โหลดหน้าถัดไป แล้วต่อท้ายบทความเดิม ครั้งละ 6 รายการ */
+  const handleViewMore = () => {
+    const nextPage = currentPage + 1;
+    loadPostsByCategory(selectedCategory, nextPage, true);
+  };
+
+  /** เปลี่ยนหมวด → โหลดบทความหน้า 1 ของหมวดนั้นใหม่ */
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     setLoading(true);
@@ -112,38 +131,22 @@ function ArticleSection() {
     loadPostsByCategory(category, 1, false);
   };
 
-  /**
-   * ทำงานเมื่อกดปุ่ม View more
-   * โหลดหน้าถัดไป (page + 1) แล้วต่อท้ายบทความเดิม ครั้งละ 6 รายการ
-   */
-  const handleViewMore = () => {
-    const nextPage = currentPage + 1;
-    loadPostsByCategory(selectedCategory, nextPage, true);
-  };
-
-  /**
-   * ทำงานเมื่อผู้ใช้พิมพ์ในช่องค้นหา
-   * อัปเดต searchKeyword แล้วให้ useEffect เรียก API ค้นหา
-   */
+  /** พิมพ์ในช่องค้นหา → useEffect จะเรียก API */
   const handleSearchChange = (event) => {
     setSearchKeyword(event.target.value);
   };
 
-  /**
-   * ปิด dropdown และล้างคำค้นหาหลังเลือกบทความ
-   */
+  /** เลือกบทความจากผลค้นหา → ปิด dropdown */
   const handleSearchResultClick = () => {
     setSearchKeyword('');
     setSearchResults([]);
     setShowSearchDropdown(false);
   };
 
-  // useEffect: รันครั้งเดียวตอนเปิดหน้าเว็บ → โหลดบทความ Highlight หน้าแรก
   useEffect(() => {
     loadPostsByCategory('Highlight', 1, false);
   }, []);
 
-  // useEffect: ค้นหาบทความจาก API ด้วย keyword (title, description, content)
   useEffect(() => {
     const trimmedKeyword = searchKeyword.trim();
 
@@ -176,7 +179,6 @@ function ArticleSection() {
     return () => clearTimeout(timer);
   }, [searchKeyword]);
 
-  // useEffect: ปิด dropdown เมื่อคลิกนอกพื้นที่ค้นหา
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -193,7 +195,6 @@ function ArticleSection() {
       <h2 className="article-title">Latest articles</h2>
 
       <div className="article-toolbar">
-        {/* ช่องค้นหา — ค้นจาก title, description, content ผ่าน API keyword */}
         <div className="article-search" ref={searchRef}>
           <input
             type="text"
@@ -238,7 +239,6 @@ function ArticleSection() {
           )}
         </div>
 
-        {/* Dropdown เลือกหมวด — แสดงบน Mobile */}
         <div className="article-category-mobile">
           <label htmlFor="category-select" className="article-category-label">
             Category
@@ -264,7 +264,6 @@ function ArticleSection() {
           </Select>
         </div>
 
-        {/* ปุ่มเลือกหมวด — แสดงบน Desktop */}
         <div className="article-category-desktop">
           {categories.map((category) => (
             <button
@@ -308,18 +307,15 @@ function ArticleSection() {
               />
             ))}
         </div>
-      </div>
 
-      {hasMore && !error && !loading && (
-        <button
-          type="button"
-          className="article-view-more"
-          onClick={handleViewMore}
-          disabled={loadingMore}
-        >
-          {loadingMore ? 'Loading...' : 'View more'}
-        </button>
-      )}
+        <ViewMoreButton
+          hasMore={hasMore}
+          error={error}
+          loading={loading}
+          loadingMore={loadingMore}
+          onViewMore={handleViewMore}
+        />
+      </div>
     </section>
   );
 }

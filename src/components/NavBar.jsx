@@ -7,8 +7,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const authActions = [
-  { label: 'Log in', className: 'nav-dropdown-login' },
-  { label: 'Sign up', className: 'nav-dropdown-signup' },
+  { label: 'Log in', to: '/login', className: 'nav-dropdown-login' },
+  { label: 'Sign up', to: '/signup', className: 'nav-dropdown-signup' },
 ];
 
 const LinkedinIcon = ({ size = 12 }) => (
@@ -39,16 +39,28 @@ export const NavBar = () => {
       borderBottom: menuOpen ? 'none' : '1px solid #eaeaea'
     }}>
       {/* ฝั่งซ้าย: โลโก้ */}
-      <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#333' }}>
-        DogGo.
-      </div>
+      <Link to="/" className="nav-logo" style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', textDecoration: 'none' }}>
+        DogGo<span className="logo-dot">.</span>
+      </Link>
 
       {/* ฝั่งขวา: กลุ่มปุ่มกด และ แฮมเบอร์เกอร์เมนู */}
       <div>
         {/* กลุ่มปุ่มปกติ */}
         <div className="nav-buttons" style={{ display: 'flex', gap: '15px' }}>
-          <button className="btn-login" style={{ padding: '10px 24px', borderRadius: '20px', border: '1px solid #333', background: 'transparent', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease' }}>Log in</button>
-          <button className="btn-signup" style={{ padding: '10px 24px', borderRadius: '20px', border: 'none', background: '#1a1a1a', color: '#fff', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease' }}>Sign up</button>
+          <Link
+            to="/login"
+            className="btn-login"
+            style={{ padding: '10px 24px', borderRadius: '20px', border: '1px solid #333', background: 'transparent', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease', textDecoration: 'none', color: '#333', display: 'inline-block' }}
+          >
+            Log in
+          </Link>
+          <Link
+            to="/signup"
+            className="btn-signup"
+            style={{ padding: '10px 24px', borderRadius: '20px', border: 'none', background: '#1a1a1a', color: '#fff', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease', textDecoration: 'none', display: 'inline-block' }}
+          >
+            Sign up
+          </Link>
         </div>
 
         {/* ปุ่มแฮมเบอร์เกอร์ + Dropdown Menu (Mobile) */}
@@ -105,6 +117,8 @@ export const NavBar = () => {
           font-size: 16px;
           font-weight: 500;
           cursor: pointer;
+          text-decoration: none;
+          box-sizing: border-box;
         }
         .nav-dropdown-login {
           border: 1px solid #333;
@@ -137,14 +151,14 @@ export const NavBar = () => {
     {menuOpen && (
       <div className="nav-mobile-panel">
         {authActions.map((action) => (
-          <button
+          <Link
             key={action.label}
-            type="button"
+            to={action.to}
             className={action.className}
             onClick={() => setMenuOpen(false)}
           >
             {action.label}
-          </button>
+          </Link>
         ))}
       </div>
     )}
