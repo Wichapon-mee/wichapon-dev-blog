@@ -10,6 +10,7 @@ import AdminLayout from './components/admin/AdminLayout';
 import AdminArticlesPage from './pages/admin/AdminArticlesPage';
 import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminPlaceholderPage from './pages/admin/AdminPlaceholderPage';
+import HealthTestPage from './pages/HealthTestPage';
 import './App.css';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
         <Route path="/post/:postId" element={<ViewPostPage />} />
         <Route path="/signup" element={<SignUpPage />} />
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/test-health" element={<HealthTestPage />} />
 
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="articles" replace />} />
