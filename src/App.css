@@ -1980,6 +1980,16 @@ body {
   object-fit: cover;
 }
 
+.member-upload-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.member-upload-input {
+  display: none;
+}
+
 .member-upload-btn {
   padding: 10px 20px;
   border: 1px solid #1a1a1a;
@@ -1989,6 +1999,23 @@ body {
   font-weight: 500;
   font-family: sans-serif;
   cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.15s ease;
+}
+
+.member-upload-btn:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.member-upload-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.member-upload-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .member-profile-form {

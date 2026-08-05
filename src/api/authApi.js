@@ -59,3 +59,27 @@ export async function resetPassword(token, body) {
     throw new Error(getErrorMessage(error));
   }
 }
+
+export async function updateProfile(token, body) {
+  try {
+    const { data } = await axios.put(`${API_BASE_URL}/auth/profile`, body, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
+
+export async function uploadProfilePicture(token, profilePic) {
+  try {
+    const { data } = await axios.put(
+      `${API_BASE_URL}/auth/profile-picture`,
+      { profilePic },
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    return data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
