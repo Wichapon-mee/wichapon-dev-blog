@@ -1,12 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { updateProfile, uploadProfilePicture } from '@/api/authApi';
+import { getStoredToken, updateProfile, uploadProfilePicture } from '@/api/authApi';
 import ProfileSavedToast from '@/components/ProfileSavedToast';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=240&h=240&fit=crop';
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const BIO_MAX_LENGTH = 120;
 
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
@@ -25,6 +26,7 @@ function AdminProfilePage() {
     name: '',
     username: '',
     email: '',
+    bio: '',
   });
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
@@ -39,11 +41,18 @@ function AdminProfilePage() {
       name: user.name || '',
       username: user.username || '',
       email: user.email || '',
+      bio: (user.bio || '').slice(0, BIO_MAX_LENGTH),
     });
   }, [user]);
 
   const handleChange = (field) => (event) => {
-    setProfile((prev) => ({ ...prev, [field]: event.target.value }));
+    let { value } = event.target;
+
+    if (field === 'bio' && value.length > BIO_MAX_LENGTH) {
+      value = value.slice(0, BIO_MAX_LENGTH);
+    }
+
+    setProfile((prev) => ({ ...prev, [field]: value }));
     setFieldErrors((prev) => ({ ...prev, [field]: '' }));
     setFormError('');
   };
@@ -56,18 +65,28 @@ function AdminProfilePage() {
     const errors = {};
     if (!profile.name.trim()) errors.name = 'Name is required';
     if (!profile.username.trim()) errors.username = 'Username is required';
+    if (profile.bio.length > BIO_MAX_LENGTH) {
+      errors.bio = `Bio must be at most ${BIO_MAX_LENGTH} characters`;
+    }
 
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors);
       return;
     }
 
+    const accessToken = token || getStoredToken();
+    if (!accessToken) {
+      setFormError('You must be logged in to save your profile');
+      return;
+    }
+
     setSaving(true);
 
     try {
-      await updateProfile(token, {
+      await updateProfile(accessToken, {
         name: profile.name.trim(),
         username: profile.username.trim(),
+        bio: profile.bio.trim(),
       });
       await refreshUser();
       setShowToast(true);
@@ -75,6 +94,8 @@ function AdminProfilePage() {
       const message = err.message || 'Failed to save profile';
       if (message.toLowerCase().includes('username')) {
         setFieldErrors({ username: message });
+      } else if (message.toLowerCase().includes('bio')) {
+        setFieldErrors({ bio: message });
       } else {
         setFormError(message);
       }
@@ -103,12 +124,18 @@ function AdminProfilePage() {
       return;
     }
 
+    const accessToken = token || getStoredToken();
+    if (!accessToken) {
+      setFormError('You must be logged in to upload a profile picture');
+      return;
+    }
+
     setUploading(true);
     setFormError('');
 
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      await uploadProfilePicture(token, dataUrl);
+      await uploadProfilePicture(accessToken, dataUrl);
       await refreshUser();
       setShowToast(true);
     } catch (err) {
@@ -122,14 +149,13 @@ function AdminProfilePage() {
 
   return (
     <>
-      <div className="admin-page admin-profile-page">
+      <form className="admin-page admin-profile-page" onSubmit={handleSubmit}>
         <header className="admin-page-header admin-profile-header">
           <h1 className="admin-page-title">Profile</h1>
           <button
             type="submit"
-            form="admin-profile-form"
             className="admin-primary-btn admin-profile-save-btn"
-            disabled={saving}
+            disabled={saving || uploading}
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
@@ -156,7 +182,7 @@ function AdminProfilePage() {
                 type="button"
                 className="admin-profile-upload-btn"
                 onClick={handleUploadClick}
-                disabled={uploading}
+                disabled={uploading || saving}
               >
                 {uploading ? 'Uploading...' : 'Upload profile picture'}
               </button>
@@ -165,7 +191,7 @@ function AdminProfilePage() {
 
           <hr className="admin-profile-divider" />
 
-          <form id="admin-profile-form" className="admin-profile-form" onSubmit={handleSubmit}>
+          <div className="admin-profile-form">
             <div className="admin-form-field">
               <label htmlFor="profile-name">Name</label>
               <input
@@ -200,9 +226,22 @@ function AdminProfilePage() {
                 readOnly
               />
             </div>
-          </form>
+
+            <div className="admin-form-field">
+              <label htmlFor="profile-bio">Bio (max {BIO_MAX_LENGTH} letters)</label>
+              <textarea
+                id="profile-bio"
+                rows={4}
+                placeholder="Bio"
+                value={profile.bio}
+                onChange={handleChange('bio')}
+                maxLength={BIO_MAX_LENGTH}
+              />
+              {fieldErrors.bio && <p className="field-error">{fieldErrors.bio}</p>}
+            </div>
+          </div>
         </div>
-      </div>
+      </form>
 
       <ProfileSavedToast open={showToast} onClose={() => setShowToast(false)} />
     </>

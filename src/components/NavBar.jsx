@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
@@ -17,26 +17,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
+import { fetchNotifications } from '@/api/notificationApi';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop';
 
-const mockNotifications = [
-  {
-    id: 1,
-    author: 'Thompson P.',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop',
-    message: 'Published new article.',
-    time: '2 hours ago',
-  },
-  {
-    id: 2,
-    author: 'Jacob Lash',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop',
-    message: 'Comment on the article you have commented on.',
-    time: '12 September 2024 at 18:30',
-  },
-];
+const NAV_NOTIFICATION_POLL_MS = 30000;
 
 const LinkedinIcon = ({ size = 12 }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -52,6 +38,39 @@ const GithubIcon = ({ size = 12 }) => (
 );
 
 function NotificationDropdown() {
+  const { isAdmin } = useAuth();
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadNotifications = useCallback(async () => {
+    if (!isAdmin) {
+      setNotifications([]);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const data = await fetchNotifications(5);
+      setNotifications(data);
+    } catch {
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    loadNotifications();
+
+    if (!isAdmin) return undefined;
+
+    const timer = window.setInterval(loadNotifications, NAV_NOTIFICATION_POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [isAdmin, loadNotifications]);
+
+  if (!isAdmin) return null;
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="nav-icon-btn" aria-label="Notifications">
@@ -59,9 +78,19 @@ function NotificationDropdown() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="nav-notifications-menu">
         <div className="nav-notifications-header">Notification</div>
-        {mockNotifications.map((item) => (
+        {loading && notifications.length === 0 && (
+          <div className="nav-notification-item nav-notification-item-status">
+            Loading...
+          </div>
+        )}
+        {!loading && notifications.length === 0 && (
+          <div className="nav-notification-item nav-notification-item-status">
+            No notifications
+          </div>
+        )}
+        {notifications.map((item) => (
           <div key={item.id} className="nav-notification-item">
-            <img src={item.avatar} alt={item.author} className="nav-notification-avatar" />
+            <img src={item.avatar || DEFAULT_AVATAR} alt={item.author} className="nav-notification-avatar" />
             <div className="nav-notification-body">
               <p className="nav-notification-text">
                 <strong>{item.author}</strong> {item.message}

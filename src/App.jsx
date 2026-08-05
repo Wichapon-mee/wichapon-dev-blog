@@ -9,9 +9,14 @@ import SignUpSuccessPage from './pages/SignUpSuccessPage';
 import LoginPage from './pages/LoginPage';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminArticlesPage from './pages/admin/AdminArticlesPage';
+import AdminCreateArticlePage from './pages/admin/AdminCreateArticlePage';
+import AdminEditArticlePage from './pages/admin/AdminEditArticlePage';
 import AdminProfilePage from './pages/admin/AdminProfilePage';
 import AdminResetPasswordPage from './pages/admin/AdminResetPasswordPage';
-import AdminPlaceholderPage from './pages/admin/AdminPlaceholderPage';
+import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
+import AdminCreateCategoryPage from './pages/admin/AdminCreateCategoryPage';
+import AdminEditCategoryPage from './pages/admin/AdminEditCategoryPage';
+import AdminNotificationsPage from './pages/admin/AdminNotificationsPage';
 import MemberLayout from './components/member/MemberLayout';
 import MemberProfilePage from './pages/member/MemberProfilePage';
 import MemberResetPasswordPage from './pages/member/MemberResetPasswordPage';
@@ -65,25 +70,13 @@ function App() {
         >
           <Route index element={<Navigate to="articles" replace />} />
           <Route path="articles" element={<AdminArticlesPage />} />
-          <Route
-            path="categories"
-            element={(
-              <AdminPlaceholderPage
-                title="Category management"
-                description="UI placeholder — connect to API in the future."
-              />
-            )}
-          />
+          <Route path="articles/create" element={<AdminCreateArticlePage />} />
+          <Route path="articles/:articleId/edit" element={<AdminEditArticlePage />} />
+          <Route path="categories" element={<AdminCategoriesPage />} />
+          <Route path="categories/create" element={<AdminCreateCategoryPage />} />
+          <Route path="categories/:categoryId/edit" element={<AdminEditCategoryPage />} />
           <Route path="profile" element={<AdminProfilePage />} />
-          <Route
-            path="notifications"
-            element={(
-              <AdminPlaceholderPage
-                title="Notification"
-                description="UI placeholder — connect to API in the future."
-              />
-            )}
-          />
+          <Route path="notifications" element={<AdminNotificationsPage />} />
           <Route path="reset-password" element={<AdminResetPasswordPage />} />
         </Route>
 
