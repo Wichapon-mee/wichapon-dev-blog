@@ -1,17 +1,31 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BIO_MAX_LENGTH = 120;
 
-// ข้อมูล mock — รอเชื่อม database / API ในอนาคต
-const initialProfile = {
-  name: 'Thompson P.',
-  username: 'thompson',
-  email: 'thompson.p@gmail.com',
-  bio: 'I am a pet enthusiast and freelance writer who specializes in animal behavior and care. With a deep love for cats, I enjoy sharing insights on feline companionship and wellness.',
-};
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=240&h=240&fit=crop';
 
 function AdminProfilePage() {
-  const [profile, setProfile] = useState(initialProfile);
+  const { user, refreshUser } = useAuth();
+  const [profile, setProfile] = useState({
+    name: '',
+    username: '',
+    email: '',
+    bio: '',
+  });
+  const [saveMessage, setSaveMessage] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+
+    setProfile({
+      name: user.name || '',
+      username: user.username || '',
+      email: user.email || '',
+      bio: '',
+    });
+  }, [user]);
 
   const handleChange = (field) => (event) => {
     let { value } = event.target;
@@ -23,10 +37,19 @@ function AdminProfilePage() {
     setProfile((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
-    // TODO: ส่งข้อมูลไป API เมื่อมีระบบ login + database
+    setSaveMessage('');
+
+    try {
+      await refreshUser();
+      setSaveMessage('Profile refreshed from server.');
+    } catch {
+      setSaveMessage('Could not refresh profile. Please try again.');
+    }
   };
+
+  const avatarSrc = user?.profilePic || DEFAULT_AVATAR;
 
   return (
     <div className="admin-page admin-profile-page">
@@ -42,12 +65,11 @@ function AdminProfilePage() {
       </header>
 
       <div className="admin-profile-body">
+        {saveMessage && <p className="auth-success-message">{saveMessage}</p>}
+
         <div className="admin-profile-avatar-row">
           <div className="admin-profile-avatar">
-            <img
-              src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=240&h=240&fit=crop"
-              alt={profile.name}
-            />
+            <img src={avatarSrc} alt={profile.name || 'Profile'} />
           </div>
           <button type="button" className="admin-profile-upload-btn">
             Upload profile picture
@@ -64,6 +86,7 @@ function AdminProfilePage() {
               type="text"
               value={profile.name}
               onChange={handleChange('name')}
+              readOnly
             />
           </div>
 
@@ -74,6 +97,7 @@ function AdminProfilePage() {
               type="text"
               value={profile.username}
               onChange={handleChange('username')}
+              readOnly
             />
           </div>
 
@@ -84,6 +108,7 @@ function AdminProfilePage() {
               type="email"
               value={profile.email}
               onChange={handleChange('email')}
+              readOnly
             />
           </div>
 
@@ -95,6 +120,7 @@ function AdminProfilePage() {
               value={profile.bio}
               onChange={handleChange('bio')}
               maxLength={BIO_MAX_LENGTH}
+              placeholder="Bio update API not available yet"
             />
           </div>
         </form>

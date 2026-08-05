@@ -5,20 +5,26 @@ import HomePage from './pages/HomePage';
 import ViewPostPage from './pages/ViewPostPage';
 import NotFoundPage from './pages/NotFoundPage';
 import SignUpPage from './pages/SignUpPage';
+import SignUpSuccessPage from './pages/SignUpSuccessPage';
 import LoginPage from './pages/LoginPage';
 import AdminLayout from './components/admin/AdminLayout';
 import AdminArticlesPage from './pages/admin/AdminArticlesPage';
 import AdminProfilePage from './pages/admin/AdminProfilePage';
+import AdminResetPasswordPage from './pages/admin/AdminResetPasswordPage';
 import AdminPlaceholderPage from './pages/admin/AdminPlaceholderPage';
+import MemberLayout from './components/member/MemberLayout';
+import MemberProfilePage from './pages/member/MemberProfilePage';
+import MemberResetPasswordPage from './pages/member/MemberResetPasswordPage';
 import HealthTestPage from './pages/HealthTestPage';
+import ProtectedRoute from './components/ProtectedRoute';
 import './App.css';
 
 function App() {
   const { pathname } = useLocation();
-  const isAdminRoute = pathname.startsWith('/admin');
+  const isPlainRoute = pathname.startsWith('/admin') || pathname.startsWith('/member');
 
   return (
-    <div className={`app-root${isAdminRoute ? ' app-root--plain' : ''}`}>
+    <div className={`app-root${isPlainRoute ? ' app-root--plain' : ''}`}>
       <Routes>
         <Route
           path="/"
@@ -32,10 +38,31 @@ function App() {
         />
         <Route path="/post/:postId" element={<ViewPostPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/signup/success" element={<SignUpSuccessPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/test-health" element={<HealthTestPage />} />
 
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/member"
+          element={(
+            <ProtectedRoute>
+              <MemberLayout />
+            </ProtectedRoute>
+          )}
+        >
+          <Route index element={<Navigate to="profile" replace />} />
+          <Route path="profile" element={<MemberProfilePage />} />
+          <Route path="reset-password" element={<MemberResetPasswordPage />} />
+        </Route>
+
+        <Route
+          path="/admin"
+          element={(
+            <ProtectedRoute requireAdmin>
+              <AdminLayout />
+            </ProtectedRoute>
+          )}
+        >
           <Route index element={<Navigate to="articles" replace />} />
           <Route path="articles" element={<AdminArticlesPage />} />
           <Route
@@ -57,15 +84,7 @@ function App() {
               />
             )}
           />
-          <Route
-            path="reset-password"
-            element={(
-              <AdminPlaceholderPage
-                title="Reset password"
-                description="UI placeholder — connect to API in the future."
-              />
-            )}
-          />
+          <Route path="reset-password" element={<AdminResetPasswordPage />} />
         </Route>
 
         <Route path="*" element={<NotFoundPage />} />

@@ -1,14 +1,41 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Menu } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import {
+  Bell,
+  ChevronDown,
+  ExternalLink,
+  LogOut,
+  Menu,
+  RotateCcw,
+  User,
+} from 'lucide-react';
 import {
   DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { useAuth } from '@/contexts/AuthContext';
 
-const authActions = [
-  { label: 'Log in', to: '/login', className: 'nav-dropdown-login' },
-  { label: 'Sign up', to: '/signup', className: 'nav-dropdown-signup' },
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop';
+
+const mockNotifications = [
+  {
+    id: 1,
+    author: 'Thompson P.',
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&h=80&fit=crop',
+    message: 'Published new article.',
+    time: '2 hours ago',
+  },
+  {
+    id: 2,
+    author: 'Jacob Lash',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop',
+    message: 'Comment on the article you have commented on.',
+    time: '12 September 2024 at 18:30',
+  },
 ];
 
 const LinkedinIcon = ({ size = 12 }) => (
@@ -24,204 +51,184 @@ const GithubIcon = ({ size = 12 }) => (
   </svg>
 );
 
-// แก้ไข Todo 1: เปลี่ยนจาก default export เป็น Named Export โดยการเติมคำว่า export const ด้านหน้า
+function NotificationDropdown() {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="nav-icon-btn" aria-label="Notifications">
+        <Bell size={20} />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="nav-notifications-menu">
+        <div className="nav-notifications-header">Notification</div>
+        {mockNotifications.map((item) => (
+          <div key={item.id} className="nav-notification-item">
+            <img src={item.avatar} alt={item.author} className="nav-notification-avatar" />
+            <div className="nav-notification-body">
+              <p className="nav-notification-text">
+                <strong>{item.author}</strong> {item.message}
+              </p>
+              <p className="nav-notification-time">{item.time}</p>
+            </div>
+          </div>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function UserMenuItem({ icon: Icon, label, onClick }) {
+  return (
+    <DropdownMenuItem className="nav-user-menu-item" onClick={onClick}>
+      <Icon size={18} className="nav-user-menu-icon" aria-hidden="true" />
+      <span>{label}</span>
+    </DropdownMenuItem>
+  );
+}
+
+function UserMenu({ onNavigate }) {
+  const { user, isAdmin, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const avatarSrc = user?.profilePic || DEFAULT_AVATAR;
+  const displayName = user?.name || user?.username || 'Member';
+
+  const goTo = (path) => {
+    onNavigate?.();
+    navigate(path);
+  };
+
+  const handleLogout = () => {
+    logout();
+    onNavigate?.();
+    navigate('/');
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger className="nav-user-menu-trigger">
+        <img src={avatarSrc} alt={displayName} className="nav-user-avatar" />
+        <span className="nav-user-name">{displayName}</span>
+        <ChevronDown size={16} aria-hidden="true" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="nav-user-menu">
+        <UserMenuItem
+          icon={User}
+          label="Profile"
+          onClick={() => goTo('/member/profile')}
+        />
+        <DropdownMenuSeparator className="nav-user-menu-separator" />
+        <UserMenuItem
+          icon={RotateCcw}
+          label="Reset password"
+          onClick={() => goTo('/member/reset-password')}
+        />
+        {isAdmin && (
+          <UserMenuItem
+            icon={ExternalLink}
+            label="Admin panel"
+            onClick={() => goTo('/admin')}
+          />
+        )}
+        <DropdownMenuSeparator className="nav-user-menu-separator" />
+        <UserMenuItem icon={LogOut} label="Log out" onClick={handleLogout} />
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+function NavAuthButtons({ onNavigate, classNamePrefix = 'btn' }) {
+  const { isAuthenticated } = useAuth();
+
+  if (isAuthenticated) {
+    return (
+      <div className="nav-auth-user">
+        <NotificationDropdown />
+        <UserMenu onNavigate={onNavigate} />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Link
+        to="/login"
+        className={`${classNamePrefix}-login`}
+        onClick={onNavigate}
+      >
+        Log in
+      </Link>
+      <Link
+        to="/signup"
+        className={`${classNamePrefix}-signup`}
+        onClick={onNavigate}
+      >
+        Sign up
+      </Link>
+    </>
+  );
+}
+
 export const NavBar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header className={`nav-header-group${menuOpen ? ' nav-header-group--open' : ''}`}>
-    <nav style={{
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '20px 40px',
-      background: '#fff',
-      borderBottom: menuOpen ? 'none' : '1px solid #eaeaea'
-    }}>
-      {/* ฝั่งซ้าย: โลโก้ */}
-      <Link to="/" className="nav-logo" style={{ fontSize: '24px', fontWeight: 'bold', color: '#333', textDecoration: 'none' }}>
-        DogGo<span className="logo-dot">.</span>
-      </Link>
+      <nav className="nav-bar">
+        <Link to="/" className="nav-logo">
+          DogGo<span className="logo-dot">.</span>
+        </Link>
 
-      {/* ฝั่งขวา: กลุ่มปุ่มกด และ แฮมเบอร์เกอร์เมนู */}
-      <div>
-        {/* กลุ่มปุ่มปกติ */}
-        <div className="nav-buttons" style={{ display: 'flex', gap: '15px' }}>
-          <Link
-            to="/login"
-            className="btn-login"
-            style={{ padding: '10px 24px', borderRadius: '20px', border: '1px solid #333', background: 'transparent', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease', textDecoration: 'none', color: '#333', display: 'inline-block' }}
-          >
-            Log in
-          </Link>
-          <Link
-            to="/signup"
-            className="btn-signup"
-            style={{ padding: '10px 24px', borderRadius: '20px', border: 'none', background: '#1a1a1a', color: '#fff', cursor: 'pointer', fontWeight: '500', transition: 'all 0.2s ease', textDecoration: 'none', display: 'inline-block' }}
-          >
-            Sign up
-          </Link>
+        <div className="nav-bar-right">
+          <div className="nav-buttons">
+            <NavAuthButtons classNamePrefix="btn" />
+          </div>
+
+          <div className="nav-hamburger">
+            <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
+              <DropdownMenuTrigger
+                className="nav-hamburger-trigger"
+                aria-label="Open menu"
+              >
+                <Menu size={24} strokeWidth={2} />
+              </DropdownMenuTrigger>
+            </DropdownMenu>
+          </div>
         </div>
+      </nav>
 
-        {/* ปุ่มแฮมเบอร์เกอร์ + Dropdown Menu (Mobile) */}
-        <div className="nav-hamburger">
-          <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-            <DropdownMenuTrigger
-              className="nav-hamburger-trigger"
-              aria-label="Open menu"
-            >
-              <Menu size={24} strokeWidth={2} />
-            </DropdownMenuTrigger>
-          </DropdownMenu>
+      {menuOpen && (
+        <div className="nav-mobile-panel">
+          <NavAuthButtons
+            classNamePrefix="nav-dropdown"
+            onNavigate={() => setMenuOpen(false)}
+          />
         </div>
-      </div>
-
-      <style>{`
-        .btn-login:hover {
-          background-color: #cccccc !important;
-        }
-        .btn-signup:hover {
-          background-color: #cccccc !important;
-        }
-        .nav-hamburger {
-          display: none;
-        }
-        .nav-hamburger-trigger {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          color: #333;
-          padding: 0;
-          outline: none;
-        }
-        .nav-mobile-panel {
-          display: none;
-          flex-direction: column;
-          gap: 16px;
-          padding: 24px 20px;
-          background: #f8f9fa;
-          border-bottom: 1px solid #eaeaea;
-        }
-        .nav-dropdown-login,
-        .nav-dropdown-signup {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          width: 100%;
-          margin: 0;
-          padding: 12px 24px;
-          border-radius: 9999px;
-          font-size: 16px;
-          font-weight: 500;
-          cursor: pointer;
-          text-decoration: none;
-          box-sizing: border-box;
-        }
-        .nav-dropdown-login {
-          border: 1px solid #333;
-          background: #fff;
-          color: #333;
-        }
-        .nav-dropdown-login:hover,
-        .nav-dropdown-login:focus {
-          background: #f5f5f5;
-          color: #333;
-        }
-        .nav-dropdown-signup {
-          border: none;
-          background: #1a1a1a;
-          color: #fff;
-        }
-        .nav-dropdown-signup:hover,
-        .nav-dropdown-signup:focus {
-          background: #333;
-          color: #fff;
-        }
-        @media (max-width: 768px) {
-          .nav-buttons { display: none !important; }
-          .nav-hamburger { display: block; }
-          .nav-mobile-panel { display: flex; }
-        }
-      `}</style>
-    </nav>
-
-    {menuOpen && (
-      <div className="nav-mobile-panel">
-        {authActions.map((action) => (
-          <Link
-            key={action.label}
-            to={action.to}
-            className={action.className}
-            onClick={() => setMenuOpen(false)}
-          >
-            {action.label}
-          </Link>
-        ))}
-      </div>
-    )}
+      )}
     </header>
   );
-}
+};
 
 export const Footer = () => {
   return (
-    <footer style={{
-      backgroundColor: '#f1f1f0', // สีพื้นหลังเทาอ่อนนวลๆ ตามรูปภาพ
-      padding: '30px 40px',
-      fontFamily: 'sans-serif',
-      borderTop: '1px solid #eaeaea'
-    }}>
-      <div style={{
-        maxWidth: '1200px',
-        margin: '0 auto',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        flexWrap: 'wrap',
-        gap: '20px'
-      }}>
-        
-        {/* ฝั่งซ้าย: Get in touch และกลุ่มไอคอนโซเชียลสีดำวงกลม */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-          <span style={{ fontSize: '14px', color: '#1a1a1a', fontWeight: '500' }}>
-            Get in touch
-          </span>
-          
-          <div style={{ display: 'flex', gap: '8px' }}>
-            {/* ไอคอนที่ 1: Linkedin */}
-            <a href="#linkedin" style={{ color: '#fff', backgroundColor: '#333', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+    <footer className="site-footer">
+      <div className="site-footer-inner">
+        <div className="site-footer-left">
+          <span className="site-footer-label">Get in touch</span>
+          <div className="site-footer-icons">
+            <a href="#linkedin" className="site-footer-icon" aria-label="LinkedIn">
               <LinkedinIcon size={12} />
             </a>
-            
-            {/* ไอคอนที่ 2: Github */}
-            <a href="#github" style={{ color: '#fff', backgroundColor: '#333', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>
+            <a href="#github" className="site-footer-icon" aria-label="GitHub">
               <GithubIcon size={12} />
             </a>
-            
-            {/* ไอคอนที่ 3: Google (ใช้ตัวอักษร G หนาในวงกลมเพื่อให้ตรงตามดีไซน์เป๊ะๆ) */}
-            <a href="#google" style={{ color: '#fff', backgroundColor: '#333', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', fontSize: '11px', fontWeight: 'bold' }}>
+            <a href="#google" className="site-footer-icon site-footer-icon--text" aria-label="Google">
               G
             </a>
           </div>
         </div>
-
-        {/* ฝั่งขวา: ลิงก์ Home page ขีดเส้นใต้ */}
-        <div>
-          <Link to="/" style={{ 
-            fontSize: '14px', 
-            color: '#1a1a1a', 
-            textDecoration: 'underline', 
-            fontWeight: '500' 
-          }}>
-            Home page
-          </Link>
-        </div>
-
+        <Link to="/" className="site-footer-link">
+          Home page
+        </Link>
       </div>
     </footer>
   );
-}
-
+};

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, Outlet, Link } from 'react-router-dom';
+import { NavLink, Outlet, Link, useNavigate } from 'react-router-dom';
 import {
   Bell,
   ExternalLink,
@@ -9,6 +9,7 @@ import {
   LogOut,
   User,
 } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 const mainNavItems = [
   { to: '/admin/articles', label: 'Article management', icon: FileText },
@@ -19,6 +20,14 @@ const mainNavItems = [
 ];
 
 function AdminLayout() {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <div className="admin-layout">
       <aside className="admin-sidebar">
@@ -49,10 +58,10 @@ function AdminLayout() {
             <ExternalLink size={18} aria-hidden="true" />
             DogGo<span className="logo-dot">.</span> website
           </Link>
-          <Link to="/login" className="admin-nav-link">
+          <button type="button" className="admin-nav-link admin-nav-logout" onClick={handleLogout}>
             <LogOut size={18} aria-hidden="true" />
             Log out
-          </Link>
+          </button>
         </div>
       </aside>
 

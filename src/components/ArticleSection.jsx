@@ -12,7 +12,7 @@ import { fetchPosts } from '@/api/blogApi';
 import BlogCard from './ฺBlogCard';
 
 // รายการหมวดหมู่ที่แสดงใน UI (ปุ่ม Desktop และ Dropdown Mobile)
-const categories = ['Highlight', 'Cat', 'Inspiration', 'General'];
+const categories = ['Highlight', 'Dog', 'Inspiration', 'General'];
 // จำนวนบทความที่ดึงจาก API ต่อ 1 ครั้ง (ใช้กับ query parameter limit)
 const POSTS_PER_PAGE = 6;
 // จำนวนผลลัพธ์สูงสุดใน dropdown ค้นหา
@@ -22,7 +22,7 @@ const SEARCH_RESULTS_LIMIT = 10;
  * สร้าง object params สำหรับส่งไป API
  * @param {string} category - หมวดที่เลือก (Highlight = ไม่กรองหมวด)
  * @param {number} page - หน้าที่ต้องการดึงข้อมูล
- * @returns {object} params เช่น { page: 1, limit: 6, category: "Cat" }
+ * @returns {object} params เช่น { page: 1, limit: 6, category: "Dog" }
  */
 function getRequestParams(category, page) {
   const params = {
