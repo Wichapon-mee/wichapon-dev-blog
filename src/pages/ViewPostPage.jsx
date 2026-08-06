@@ -12,6 +12,7 @@ import {
   fetchPostLikeStatus,
   togglePostLike,
 } from '@/api/blogApi';
+import { fetchAuthorProfile } from '@/api/authApi';
 import { useAuth } from '@/contexts/AuthContext';
 
 const DEFAULT_AVATAR =
@@ -59,6 +60,7 @@ function ViewPostPage() {
   const { isAuthenticated, token } = useAuth();
 
   const [post, setPost] = useState(null);
+  const [authorProfile, setAuthorProfile] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -85,8 +87,12 @@ function ViewPostPage() {
       setError(null);
 
       try {
-        const data = await fetchPostById(postId);
+        const [data, author] = await Promise.all([
+          fetchPostById(postId),
+          fetchAuthorProfile().catch(() => null),
+        ]);
         setPost(data);
+        setAuthorProfile(author);
         await loadComments();
 
         if (token) {
@@ -190,7 +196,9 @@ function ViewPostPage() {
   const facebookShareUrl = `https://www.facebook.com/share.php?u=${encodedShareUrl}`;
   const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`;
   const twitterShareUrl = `https://www.twitter.com/share?&url=${encodedShareUrl}`;
-  const authorName = post?.author || 'Author';
+  const authorName = authorProfile?.name || post?.author || 'Author';
+  const authorAvatar = authorProfile?.profilePic || DEFAULT_AVATAR;
+  const authorBio = authorProfile?.bio || '';
 
   return (
     <div className="view-post-layout">
@@ -332,14 +340,14 @@ function ViewPostPage() {
               <div className="view-post-author-card">
                 <img
                   className="view-post-author-avatar"
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(authorName)}&background=random`}
+                  src={authorAvatar}
                   alt={authorName}
                 />
                 <p className="view-post-author-label">Author</p>
                 <p className="view-post-author-name">{authorName}</p>
-                <p className="view-post-author-bio">
-                  I am a pet enthusiast and freelance writer who specializes in animal behavior and care. With a deep love for cats, I enjoy sharing insights on feline companionship and wellness.
-                </p>
+                {authorBio && (
+                  <p className="view-post-author-bio">{authorBio}</p>
+                )}
               </div>
             </aside>
           </div>

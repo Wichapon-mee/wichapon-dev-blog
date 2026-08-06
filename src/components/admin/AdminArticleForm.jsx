@@ -4,7 +4,8 @@ import { fetchCategories } from '@/api/categoryApi';
 import { useAuth } from '@/contexts/AuthContext';
 
 const INTRO_MAX_LENGTH = 120;
-const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 const EMPTY_FORM = {
   image: '',
@@ -24,15 +25,6 @@ function normalizeFormValues(values, fallbackAuthor = '') {
   };
 }
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Failed to read image file'));
-    reader.readAsDataURL(file);
-  });
-}
-
 function AdminArticleForm({
   mode = 'create',
   initialValues = EMPTY_FORM,
@@ -43,11 +35,26 @@ function AdminArticleForm({
 }) {
   const { user } = useAuth();
   const fileInputRef = useRef(null);
+  const previewUrlRef = useRef('');
   const [form, setForm] = useState(() => normalizeFormValues(initialValues, user?.name));
+  const [imageFile, setImageFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(initialValues.image || '');
   const [categories, setCategories] = useState([]);
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const [uploading, setUploading] = useState(false);
+
+  useEffect(() => {
+    previewUrlRef.current = previewUrl;
+  }, [previewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrlRef.current.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (mode === 'create' && user?.name && !form.author) {
@@ -70,11 +77,12 @@ function AdminArticleForm({
 
   const validateForm = () => {
     const errors = {};
+    const hasImage = Boolean(imageFile || form.image);
 
     if (!form.category) errors.category = 'Category is required';
     if (!form.author.trim()) errors.author = 'Author name is required';
     if (!form.title.trim()) errors.title = 'Title is required';
-    if (!form.image) errors.image = 'Thumbnail image is required';
+    if (!hasImage) errors.image = 'Thumbnail image is required';
     if (!form.description.trim()) errors.description = 'Introduction is required';
     if (form.description.length > INTRO_MAX_LENGTH) {
       errors.description = `Introduction must be at most ${INTRO_MAX_LENGTH} characters`;
@@ -97,13 +105,19 @@ function AdminArticleForm({
     setFormError('');
   };
 
+  const buildPayload = () => ({
+    ...normalizeFormValues(form),
+    imageFile,
+    image: imageFile ? '' : form.image,
+  });
+
   const handleSubmit = (status) => async (event) => {
     event.preventDefault();
     setFormError('');
 
     if (!validateForm()) return;
 
-    const payload = normalizeFormValues(form);
+    const payload = buildPayload();
 
     if (status === 'Draft') {
       await onSaveDraft?.(payload, categories);
@@ -116,36 +130,37 @@ function AdminArticleForm({
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (event) => {
+  const handleFileChange = (event) => {
     const file = event.target.files?.[0];
     event.target.value = '';
 
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setFormError('Please select an image file');
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setFormError('Please upload a valid image file (JPEG, PNG, GIF, WebP).');
       return;
     }
 
     if (file.size > MAX_IMAGE_SIZE) {
-      setFormError('Image must be smaller than 2MB');
+      setFormError('The file is too large. Please upload an image smaller than 5MB.');
       return;
     }
 
     setUploading(true);
     setFormError('');
 
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      setForm((prev) => ({ ...prev, image: dataUrl }));
-    } catch (err) {
-      setFormError(err.message || 'Failed to upload thumbnail');
-    } finally {
-      setUploading(false);
+    if (previewUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
     }
+
+    const objectUrl = URL.createObjectURL(file);
+    setPreviewUrl(objectUrl);
+    setImageFile(file);
+    setFieldErrors((prev) => ({ ...prev, image: '' }));
+    setUploading(false);
   };
 
-  const thumbnailSrc = form.image;
+  const thumbnailSrc = previewUrl;
 
   return (
     <form className="admin-article-form" onSubmit={(event) => event.preventDefault()}>
@@ -196,7 +211,7 @@ function AdminArticleForm({
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/jpeg,image/png,image/gif,image/webp"
                 className="member-upload-input"
                 onChange={handleFileChange}
                 aria-hidden="true"
