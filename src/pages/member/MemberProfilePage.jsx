@@ -8,15 +8,6 @@ const DEFAULT_AVATAR =
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Failed to read image file'));
-    reader.readAsDataURL(file);
-  });
-}
-
 function MemberProfilePage() {
   const { user, token, refreshUser } = useAuth();
   const fileInputRef = useRef(null);
@@ -103,8 +94,7 @@ function MemberProfilePage() {
     setFormError('');
 
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      await uploadProfilePicture(token, dataUrl);
+      await uploadProfilePicture(token, file);
       await refreshUser();
       setShowToast(true);
     } catch (err) {

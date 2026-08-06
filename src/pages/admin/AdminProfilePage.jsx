@@ -9,15 +9,6 @@ const DEFAULT_AVATAR =
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const BIO_MAX_LENGTH = 120;
 
-function readFileAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Failed to read image file'));
-    reader.readAsDataURL(file);
-  });
-}
-
 function AdminProfilePage() {
   const { user, token, refreshUser } = useAuth();
   const fileInputRef = useRef(null);
@@ -134,8 +125,7 @@ function AdminProfilePage() {
     setFormError('');
 
     try {
-      const dataUrl = await readFileAsDataUrl(file);
-      await uploadProfilePicture(accessToken, dataUrl);
+      await uploadProfilePicture(accessToken, file);
       await refreshUser();
       setShowToast(true);
     } catch (err) {

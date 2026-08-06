@@ -66,6 +66,23 @@ async function resolveCategoryId(categoryName, categories) {
   return match.id;
 }
 
+function buildArticleFormData(form, categoryId, statusLabel) {
+  const formData = new FormData();
+  formData.append('title', form.title.trim());
+  formData.append('category_id', String(categoryId));
+  formData.append('description', form.description.trim());
+  formData.append('content', form.content.trim());
+  formData.append('status_id', String(statusLabelToId(statusLabel)));
+
+  if (form.imageFile) {
+    formData.append('imageFile', form.imageFile);
+  } else if (form.image) {
+    formData.append('image', form.image);
+  }
+
+  return formData;
+}
+
 function mapPostToAdminArticle(post) {
   return {
     id: post.id,
@@ -115,20 +132,16 @@ export async function fetchAdminArticleById(articleId) {
 
 export async function createAdminArticle(form, statusLabel, categories) {
   try {
-    const categoryId = await resolveCategoryId(form.category, categories);
+    if (!form.imageFile) {
+      throw new Error('Thumbnail image is required');
+    }
 
-    await axios.post(
-      `${API_BASE_URL}/posts`,
-      {
-        title: form.title.trim(),
-        image: form.image,
-        category_id: categoryId,
-        description: form.description.trim(),
-        content: form.content.trim(),
-        status_id: statusLabelToId(statusLabel),
-      },
-      { headers: getAuthHeaders() },
-    );
+    const categoryId = await resolveCategoryId(form.category, categories);
+    const formData = buildArticleFormData(form, categoryId, statusLabel);
+
+    await axios.post(`${API_BASE_URL}/posts`, formData, {
+      headers: getAuthHeaders(),
+    });
   } catch (error) {
     throw new Error(getErrorMessage(error));
   }
@@ -136,20 +149,16 @@ export async function createAdminArticle(form, statusLabel, categories) {
 
 export async function updateAdminArticle(articleId, form, statusLabel, categories) {
   try {
-    const categoryId = await resolveCategoryId(form.category, categories);
+    if (!form.imageFile && !form.image) {
+      throw new Error('Thumbnail image is required');
+    }
 
-    await axios.put(
-      `${API_BASE_URL}/posts/${articleId}`,
-      {
-        title: form.title.trim(),
-        image: form.image,
-        category_id: categoryId,
-        description: form.description.trim(),
-        content: form.content.trim(),
-        status_id: statusLabelToId(statusLabel),
-      },
-      { headers: getAuthHeaders() },
-    );
+    const categoryId = await resolveCategoryId(form.category, categories);
+    const formData = buildArticleFormData(form, categoryId, statusLabel);
+
+    await axios.put(`${API_BASE_URL}/posts/${articleId}`, formData, {
+      headers: getAuthHeaders(),
+    });
   } catch (error) {
     throw new Error(getErrorMessage(error));
   }

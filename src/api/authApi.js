@@ -71,15 +71,35 @@ export async function updateProfile(token, body) {
   }
 }
 
-export async function uploadProfilePicture(token, profilePic) {
+export async function uploadProfilePicture(token, file) {
   try {
+    const formData = new FormData();
+    formData.append('profileFile', file);
+
     const { data } = await axios.put(
       `${API_BASE_URL}/auth/profile-picture`,
-      { profilePic },
-      { headers: { Authorization: `Bearer ${token}` } },
+      formData,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      },
     );
     return data;
   } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
+
+export async function fetchAuthorProfile() {
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/auth/author-profile`);
+    return data;
+  } catch (error) {
+    if (error.response?.status === 404) {
+      return null;
+    }
     throw new Error(getErrorMessage(error));
   }
 }
