@@ -1,7 +1,11 @@
 import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 
-function LoginRequiredDialog({ open, onClose }) {
+function LoginRequiredDialog({ open, onClose, returnTo }) {
+  const location = useLocation();
+  const redirectTo = returnTo || location.pathname;
+
   if (!open) return null;
 
   return (
@@ -26,15 +30,25 @@ function LoginRequiredDialog({ open, onClose }) {
           Create an account to continue
         </h2>
 
-        <button type="button" className="login-dialog-create-btn">
+        <Link
+          to="/signup"
+          state={{ from: redirectTo }}
+          className="login-dialog-create-btn"
+          onClick={onClose}
+        >
           Create account
-        </button>
+        </Link>
 
         <p className="login-dialog-footer">
           Already have an account?{' '}
-          <button type="button" className="login-dialog-login-link">
+          <Link
+            to="/login"
+            state={{ from: redirectTo }}
+            className="login-dialog-login-link"
+            onClick={onClose}
+          >
             Log in
-          </button>
+          </Link>
         </p>
       </div>
     </div>

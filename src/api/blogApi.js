@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// URL หลักของ API บทเรียน
-const API_BASE_URL = 'https://blog-post-project-api.vercel.app';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 /**
  * เรียก API เพื่อดึงรายการบทความ
@@ -34,5 +33,66 @@ export async function fetchPosts({ page = 1, limit = 6, category, keyword } = {}
  */
 export async function fetchPostById(postId) {
   const { data } = await axios.get(`${API_BASE_URL}/posts/${postId}`);
-  return data;
+  return {
+    ...data,
+    likes: data.likes ?? data.likes_count ?? 0,
+  };
+}
+
+function getAuthHeaders(token) {
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+function getErrorMessage(error) {
+  return error.response?.data?.error
+    || error.response?.data?.message
+    || error.message
+    || 'Request failed';
+}
+
+export async function fetchPostComments(postId) {
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/posts/${postId}/comments`);
+    return data.comments || [];
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
+
+export async function createPostComment(token, postId, comment) {
+  try {
+    const { data } = await axios.post(
+      `${API_BASE_URL}/posts/${postId}/comments`,
+      { comment },
+      { headers: getAuthHeaders(token) },
+    );
+    return data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
+
+export async function togglePostLike(token, postId) {
+  try {
+    const { data } = await axios.post(
+      `${API_BASE_URL}/posts/${postId}/like`,
+      {},
+      { headers: getAuthHeaders(token) },
+    );
+    return data;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
+
+export async function fetchPostLikeStatus(token, postId) {
+  try {
+    const { data } = await axios.get(
+      `${API_BASE_URL}/posts/${postId}/like`,
+      { headers: getAuthHeaders(token) },
+    );
+    return data.liked;
+  } catch {
+    return false;
+  }
 }

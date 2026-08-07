@@ -1,20 +1,38 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { Copy, Smile } from 'lucide-react';
+import { Copy, Heart } from 'lucide-react';
 import { NavBar, Footer } from '@/components/NavBar';
 import LoginRequiredDialog from '@/components/LoginRequiredDialog';
 import CopyToast from '@/components/CopyToast';
-import { fetchPostById } from '@/api/blogApi';
+import {
+  createPostComment,
+  fetchPostById,
+  fetchPostComments,
+  fetchPostLikeStatus,
+  togglePostLike,
+} from '@/api/blogApi';
+import { fetchAuthorProfile } from '@/api/authApi';
+import { useAuth } from '@/contexts/AuthContext';
 
-// Assignment: สมมติว่าผู้ใช้ทุกคนยังไม่ได้เข้าสู่ระบบ
-const isLoggedIn = false;
+const DEFAULT_AVATAR =
+  'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop';
 
 function formatDate(isoDate) {
   return new Date(isoDate).toLocaleDateString('en-GB', {
     day: 'numeric',
     month: 'long',
     year: 'numeric',
+  });
+}
+
+function formatCommentDate(isoDate) {
+  return new Date(isoDate).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -39,13 +57,29 @@ const TwitterIcon = () => (
 
 function ViewPostPage() {
   const { postId } = useParams();
+  const { isAuthenticated, token } = useAuth();
 
   const [post, setPost] = useState(null);
+  const [authorProfile, setAuthorProfile] = useState(null);
+  const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showLoginDialog, setShowLoginDialog] = useState(false);
   const [showCopiedToast, setShowCopiedToast] = useState(false);
   const [comment, setComment] = useState('');
+  const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
+  const [commentLoading, setCommentLoading] = useState(false);
+  const [commentError, setCommentError] = useState('');
+
+  const loadComments = useCallback(async () => {
+    try {
+      const data = await fetchPostComments(postId);
+      setComments(data);
+    } catch {
+      setComments([]);
+    }
+  }, [postId]);
 
   useEffect(() => {
     const loadPost = async () => {
@@ -53,8 +87,20 @@ function ViewPostPage() {
       setError(null);
 
       try {
-        const data = await fetchPostById(postId);
+        const [data, author] = await Promise.all([
+          fetchPostById(postId),
+          fetchAuthorProfile().catch(() => null),
+        ]);
         setPost(data);
+        setAuthorProfile(author);
+        await loadComments();
+
+        if (token) {
+          const hasLiked = await fetchPostLikeStatus(token, postId);
+          setLiked(hasLiked);
+        } else {
+          setLiked(false);
+        }
       } catch {
         setError('Failed to load this article. Please try again later.');
         setPost(null);
@@ -64,28 +110,61 @@ function ViewPostPage() {
     };
 
     loadPost();
-  }, [postId]);
+  }, [postId, token, loadComments]);
 
   const requireLogin = () => {
-    if (!isLoggedIn) {
+    if (!isAuthenticated) {
       setShowLoginDialog(true);
       return true;
     }
     return false;
   };
 
-  const handleLikeClick = () => {
+  const handleLikeClick = async () => {
     if (requireLogin()) return;
-  };
 
-  const handleCommentFocus = (event) => {
-    if (requireLogin()) {
-      event.target.blur();
+    setLikeLoading(true);
+
+    try {
+      const data = await togglePostLike(token, postId);
+      setLiked(data.liked);
+      setPost((prev) => (prev ? { ...prev, likes: data.likes } : prev));
+    } catch (err) {
+      setCommentError(err.message);
+    } finally {
+      setLikeLoading(false);
     }
   };
 
-  const handleSendComment = () => {
+  const handleCommentInteraction = (event) => {
+    if (!isAuthenticated) {
+      event.preventDefault();
+      event.target.blur();
+      setShowLoginDialog(true);
+    }
+  };
+
+  const handleSendComment = async () => {
     if (requireLogin()) return;
+
+    const trimmed = comment.trim();
+    if (!trimmed) {
+      setCommentError('Please enter a comment before sending.');
+      return;
+    }
+
+    setCommentLoading(true);
+    setCommentError('');
+
+    try {
+      await createPostComment(token, postId, trimmed);
+      setComment('');
+      await loadComments();
+    } catch (err) {
+      setCommentError(err.message);
+    } finally {
+      setCommentLoading(false);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -107,17 +186,19 @@ function ViewPostPage() {
         document.body.removeChild(textarea);
         setShowCopiedToast(true);
       } catch {
-        // clipboard ไม่พร้อมใช้งาน
+        // clipboard unavailable
       }
     }
   };
 
   const pageUrl = window.location.href;
   const encodedShareUrl = encodeURIComponent(pageUrl);
-
   const facebookShareUrl = `https://www.facebook.com/share.php?u=${encodedShareUrl}`;
   const linkedinShareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedShareUrl}`;
   const twitterShareUrl = `https://www.twitter.com/share?&url=${encodedShareUrl}`;
+  const authorName = authorProfile?.name || post?.author || 'Author';
+  const authorAvatar = authorProfile?.profilePic || DEFAULT_AVATAR;
+  const authorBio = authorProfile?.bio || '';
 
   return (
     <div className="view-post-layout">
@@ -154,11 +235,13 @@ function ViewPostPage() {
               <div className="view-post-actions">
                 <button
                   type="button"
-                  className="view-post-like-btn"
+                  className={`view-post-like-btn${liked ? ' view-post-like-btn--active' : ''}`}
                   onClick={handleLikeClick}
+                  disabled={likeLoading}
                   aria-label={`Like post, ${post.likes} likes`}
+                  aria-pressed={liked}
                 >
-                  <Smile size={18} aria-hidden="true" />
+                  <Heart size={18} aria-hidden="true" fill={liked ? 'currentColor' : 'none'} />
                   <span>{post.likes}</span>
                 </button>
 
@@ -169,7 +252,7 @@ function ViewPostPage() {
                     onClick={handleCopyLink}
                   >
                     <Copy size={16} aria-hidden="true" />
-                    Copy
+                    Copy link
                   </button>
 
                   <a
@@ -212,18 +295,44 @@ function ViewPostPage() {
                     placeholder="What are your thoughts?"
                     value={comment}
                     onChange={(event) => setComment(event.target.value)}
-                    onFocus={handleCommentFocus}
-                    onClick={handleCommentFocus}
-                    readOnly={!isLoggedIn}
+                    onFocus={handleCommentInteraction}
+                    onClick={handleCommentInteraction}
+                    readOnly={!isAuthenticated}
                   />
                   <button
                     type="button"
                     className="view-post-send-btn"
                     onClick={handleSendComment}
+                    disabled={commentLoading || !isAuthenticated}
                   >
-                    Send
+                    {commentLoading ? 'Sending...' : 'Send'}
                   </button>
                 </div>
+                {commentError && <p className="field-error">{commentError}</p>}
+
+                <ul className="view-post-comment-list">
+                  {comments.map((item) => {
+                    const displayName = item.name || item.username || 'Member';
+                    const avatarSrc = item.profile_pic || DEFAULT_AVATAR;
+
+                    return (
+                      <li key={item.id} className="view-post-comment-item">
+                        <img
+                          src={avatarSrc}
+                          alt={displayName}
+                          className="view-post-comment-avatar"
+                        />
+                        <div className="view-post-comment-body">
+                          <div className="view-post-comment-meta">
+                            <strong>{displayName}</strong>
+                            <span>{formatCommentDate(item.created_at)}</span>
+                          </div>
+                          <p className="view-post-comment-text">{item.comment_text}</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
             </article>
 
@@ -231,14 +340,14 @@ function ViewPostPage() {
               <div className="view-post-author-card">
                 <img
                   className="view-post-author-avatar"
-                  src={`https://ui-avatars.com/api/?name=${encodeURIComponent(post.author)}&background=random`}
-                  alt={post.author}
+                  src={authorAvatar}
+                  alt={authorName}
                 />
                 <p className="view-post-author-label">Author</p>
-                <p className="view-post-author-name">{post.author}</p>
-                <p className="view-post-author-bio">
-                  I am a pet enthusiast and freelance writer who specializes in animal behavior and care. With a deep love for cats, I enjoy sharing insights on feline companionship and wellness.
-                </p>
+                <p className="view-post-author-name">{authorName}</p>
+                {authorBio && (
+                  <p className="view-post-author-bio">{authorBio}</p>
+                )}
               </div>
             </aside>
           </div>
@@ -250,6 +359,7 @@ function ViewPostPage() {
       <LoginRequiredDialog
         open={showLoginDialog}
         onClose={() => setShowLoginDialog(false)}
+        returnTo={`/post/${postId}`}
       />
 
       <CopyToast
