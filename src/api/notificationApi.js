@@ -53,6 +53,7 @@ function mapNotification(item) {
     message: item.message,
     time: formatNotificationTime(item.created_at),
     link: item.link,
+    isRead: Boolean(item.is_read),
   };
 }
 
@@ -62,7 +63,32 @@ export async function fetchNotifications(limit = 50) {
       params: { limit },
       headers: getAuthHeaders(),
     });
-    return (data.notifications || []).map(mapNotification);
+
+    return {
+      notifications: (data.notifications || []).map(mapNotification),
+      unreadCount: data.unreadCount ?? 0,
+    };
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
+
+export async function fetchUnreadCount() {
+  try {
+    const { data } = await axios.get(`${API_BASE_URL}/notifications/unread-count`, {
+      headers: getAuthHeaders(),
+    });
+    return data.unreadCount ?? 0;
+  } catch (error) {
+    throw new Error(getErrorMessage(error));
+  }
+}
+
+export async function markAllNotificationsRead() {
+  try {
+    await axios.patch(`${API_BASE_URL}/notifications/read-all`, null, {
+      headers: getAuthHeaders(),
+    });
   } catch (error) {
     throw new Error(getErrorMessage(error));
   }
