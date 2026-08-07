@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { fetchNotifications } from '@/api/notificationApi';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 const DEFAULT_AVATAR =
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop';
@@ -37,8 +38,21 @@ const GithubIcon = ({ size = 12 }) => (
   </svg>
 );
 
+function NotificationBadge({ count }) {
+  if (count <= 0) return null;
+
+  const label = count > 9 ? '9+' : String(count);
+
+  return (
+    <span className="nav-notification-badge" aria-hidden="true">
+      {label}
+    </span>
+  );
+}
+
 function NotificationDropdown() {
   const { isAdmin } = useAuth();
+  const { unreadCount, markAllAsRead } = useNotifications();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +65,7 @@ function NotificationDropdown() {
     setLoading(true);
 
     try {
-      const data = await fetchNotifications(5);
+      const { notifications: data } = await fetchNotifications(5);
       setNotifications(data);
     } catch {
       setNotifications([]);
@@ -69,12 +83,22 @@ function NotificationDropdown() {
     return () => window.clearInterval(timer);
   }, [isAdmin, loadNotifications]);
 
+  const handleOpenChange = (open) => {
+    if (open && unreadCount > 0) {
+      markAllAsRead();
+    }
+  };
+
   if (!isAdmin) return null;
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger className="nav-icon-btn" aria-label="Notifications">
+    <DropdownMenu onOpenChange={handleOpenChange}>
+      <DropdownMenuTrigger
+        className="nav-icon-btn nav-icon-btn--with-badge"
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+      >
         <Bell size={20} />
+        <NotificationBadge count={unreadCount} />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="nav-notifications-menu">
         <div className="nav-notifications-header">Notification</div>

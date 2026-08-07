@@ -10,6 +10,7 @@ import {
   User,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 const mainNavItems = [
   { to: '/admin/articles', label: 'Article management', icon: FileText },
@@ -21,6 +22,7 @@ const mainNavItems = [
 
 function AdminLayout() {
   const { logout } = useAuth();
+  const { unreadCount } = useNotifications();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -46,7 +48,12 @@ function AdminLayout() {
                   isActive ? 'admin-nav-link admin-nav-link--active' : 'admin-nav-link'
                 }
               >
-                <Icon size={18} aria-hidden="true" />
+                <span className="admin-nav-link-icon-wrap">
+                  <Icon size={18} aria-hidden="true" />
+                  {to === '/admin/notifications' && unreadCount > 0 && (
+                    <span className="admin-nav-notification-badge" aria-hidden="true" />
+                  )}
+                </span>
                 {label}
               </NavLink>
             ))}

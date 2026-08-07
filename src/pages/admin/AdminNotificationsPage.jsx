@@ -1,11 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchNotifications } from '@/api/notificationApi';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 const POLL_INTERVAL_MS = 30000;
 
 function AdminNotificationsPage() {
   const navigate = useNavigate();
+  const { markAllAsRead } = useNotifications();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -17,7 +19,7 @@ function AdminNotificationsPage() {
     setError('');
 
     try {
-      const data = await fetchNotifications();
+      const { notifications: data } = await fetchNotifications();
       setNotifications(data);
     } catch (err) {
       setError(err.message);
@@ -30,6 +32,7 @@ function AdminNotificationsPage() {
   }, []);
 
   useEffect(() => {
+    markAllAsRead();
     loadNotifications(true);
 
     const timer = window.setInterval(() => {
@@ -37,7 +40,7 @@ function AdminNotificationsPage() {
     }, POLL_INTERVAL_MS);
 
     return () => window.clearInterval(timer);
-  }, [loadNotifications]);
+  }, [loadNotifications, markAllAsRead]);
 
   return (
     <div className="admin-page">
